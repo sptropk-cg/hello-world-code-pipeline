@@ -1,1 +1,30 @@
 version: 0.2
+phases: 
+  install:
+    runtime-versions:
+        docker: 18     
+    commands: 
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+  pre_build: 
+    commands: 
+    - echo Log In to ECRs... 
+    - aws --region us-east-1 ecr get-login-password | docker login --password-stdin --username AWS $ACCOUNT_NUMBER.dkr.ecr.us-east-1.amazonaws.com
+    - IMAGE_TAG=build-$CODEBUILD_BUILD_NUMBER
+  build: 
+    commands: 
+    - echo Build started on `date` 
+    - echo Building the Docker image...
+    # build image using tag
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    # tag image with ECR locations us-east-1
+    - docker tag $IMAGE_NAME:$IMAGE_TAG $ACCOUNT_NUMBER.dkr.ecr.us-east-1.amazonaws.com/$IMAGE_NAME:$IMAGE_TAG
+    - docker tag $IMAGE_NAME:$IMAGE_TAG $ACCOUNT_NUMBER.dkr.ecr.us-east-1.amazonaws.com/$IMAGE_NAME:latest
+  
+  post_build: 
+    commands: 
+    - echo Build completed on `date` 
+    - echo pushing to repo
+    # push to all regions
+    - docker push $ACCOUNT_NUMBER.dkr.ecr.us-east-1.amazonaws.com/$IMAGE_NAME
+   
