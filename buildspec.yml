@@ -5,11 +5,11 @@ env:
     AWS_ACCOUNT_ID: 410997643304 
     IMAGE_REPO_NAME: hello-world-repo
     IMAGE_TAG: 1
-  phases:
+phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+      - aws --region $AWS_DEFAULT_REGION ecr get-login-password | docker login --password-stdin --username AWS $ACCOUNT_NUMBER.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
   build:
     commands:
       - echo Build started on `date`
